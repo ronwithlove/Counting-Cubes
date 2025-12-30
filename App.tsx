@@ -143,8 +143,14 @@ const App: React.FC = () => {
 
   const toggleHint = () => {
     playSound('click', isMuted);
-    setShowHint(!showHint);
-    if (!showHint) setFeedback(`悄悄提示：底层${layerCounts[0]}个，中层${layerCounts[1]}个，顶层${layerCounts[2]}个。`);
+    const nextShowHint = !showHint;
+    setShowHint(nextShowHint);
+    if (nextShowHint) {
+      setFeedback(`悄悄提示：底层${layerCounts[0]}个，中层${layerCounts[1]}个，顶层${layerCounts[2]}个。`);
+    } else {
+      // 隐藏提示时恢复默认反馈
+      setFeedback('小朋友，数一数这里有多少个小方块？');
+    }
   };
 
   if (!puzzle) return null;
@@ -155,7 +161,7 @@ const App: React.FC = () => {
 
       {/* 版本号 */}
       <div className="absolute top-1 right-2 text-[10px] font-bold text-slate-400 select-none pointer-events-none z-[60]">
-        v1.4.0
+        v1.4.3
       </div>
 
       {/* 3D视图区 */}

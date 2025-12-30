@@ -1,8 +1,15 @@
 
 import React from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, ThreeElements } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Edges, Center } from '@react-three/drei';
 import { Position } from '../types.ts';
+
+// Add type augmentation to resolve "Property does not exist on type 'JSX.IntrinsicElements'" for R3F elements
+declare global {
+  namespace JSX {
+    interface IntrinsicElements extends ThreeElements {}
+  }
+}
 
 interface CubeSceneProps {
   positions: Position[];
