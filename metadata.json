@@ -1,0 +1,5 @@
+{
+  "name": "Counting Cubes - 3D Puzzle",
+  "description": "An interactive 3D math game where users count cubes in a 3x3x3 grid, following physical constraints and connectivity rules.",
+  "requestFramePermissions": []
+}
