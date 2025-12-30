@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { RotateCcw, Send, Sparkles, Trophy, Lightbulb, ChevronRight, Layers, HelpCircle, Volume2, VolumeX } from 'lucide-react';
+import { RotateCcw, Send, Sparkles, Trophy, Lightbulb, ChevronRight, Layers, HelpCircle, Volume2, VolumeX, Delete } from 'lucide-react';
 import { generatePuzzle } from './utils/generator.ts';
 import { CubeState } from './types.ts';
 import CubeScene from './components/CubeScene.tsx';
@@ -76,6 +76,7 @@ const App: React.FC = () => {
   const [feedback, setFeedback] = useState<string>('小朋友，数一数这里有多少个小方块？');
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [score, setScore] = useState<number>(0);
+  const [hasAwardedScore, setHasAwardedScore] = useState<boolean>(false);
   const [isExploded, setIsExploded] = useState<boolean>(false);
   const [showHint, setShowHint] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
@@ -88,6 +89,7 @@ const App: React.FC = () => {
     setUserGuess('');
     setFeedback('新题目来啦！看仔细哦～');
     setIsCorrect(null);
+    setHasAwardedScore(false);
     setIsExploded(false);
     setShowHint(false);
     setTriggerEffect(false);
@@ -102,14 +104,18 @@ const App: React.FC = () => {
     return counts;
   }, [puzzle]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!puzzle || !userGuess) return;
     const guessNum = parseInt(userGuess);
     const correct = guessNum === puzzle.totalCount;
+    
     setIsCorrect(correct);
     if (correct) {
-      setScore(s => s + 1);
+      if (!hasAwardedScore) {
+        setScore(s => s + 1);
+        setHasAwardedScore(true);
+      }
       setFeedback('太棒了！你数得非常准！✨');
       playSound('correct', isMuted);
       setTriggerEffect(true);
@@ -117,7 +123,22 @@ const App: React.FC = () => {
     } else {
       setFeedback('哎呀，差一点点，再数一遍试试？');
       playSound('wrong', isMuted);
+      setUserGuess(''); // 答案错误直接清空
     }
+  };
+
+  const handleKeyPress = (num: string) => {
+    playSound('click', isMuted);
+    // 0 不可以作为第一位数
+    if (userGuess === '' && num === '0') return;
+    if (userGuess.length < 2) {
+      setUserGuess(prev => prev + num);
+    }
+  };
+
+  const handleBackspace = () => {
+    playSound('click', isMuted);
+    setUserGuess(prev => prev.slice(0, -1));
   };
 
   const toggleHint = () => {
@@ -132,16 +153,19 @@ const App: React.FC = () => {
     <div className="flex flex-col md:flex-row h-screen bg-gradient-to-b from-sky-50 to-blue-100 overflow-hidden p-3 md:p-6 lg:p-8 gap-4 md:gap-6 relative">
       <StarCelebration active={triggerEffect} />
 
-      {/* 3D视图区：在移动端高度占比大，在桌面端保持比例 */}
+      {/* 版本号 */}
+      <div className="absolute top-1 right-2 text-[10px] font-bold text-slate-400 select-none pointer-events-none z-[60]">
+        v1.4.0
+      </div>
+
+      {/* 3D视图区 */}
       <div className="flex-[1.2] md:flex-[1.5] lg:flex-[2] relative overflow-hidden">
         <CubeScene positions={puzzle.positions} isExploded={isExploded} />
         
-        {/* 覆盖控件层：使用更合理的定位避免重叠 */}
         <div className="absolute top-4 left-4 md:top-6 md:left-6 flex items-center gap-3">
           <div className="bg-white/90 backdrop-blur shadow-xl px-4 py-2 md:px-6 md:py-3 rounded-full flex items-center gap-2 md:gap-3 border-2 md:border-4 border-yellow-400 animate-in fade-in slide-in-from-left duration-500">
             <Trophy className="w-5 h-5 md:w-8 md:h-8 text-yellow-500 fill-yellow-200" />
             <div className="flex flex-col">
-              <span className="text-[10px] font-black text-slate-400 uppercase leading-none hidden md:block">得分</span>
               <span className="text-lg md:text-2xl font-black text-slate-700 leading-none">{score}</span>
             </div>
           </div>
@@ -162,59 +186,84 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* 控制面板：宽度在桌面端固定，在移动端占据剩余空间 */}
-      <div className="flex-1 md:w-[350px] lg:w-[420px] xl:w-[480px] flex flex-col gap-4 overflow-y-auto no-scrollbar pb-2">
-        <div className="bg-white/90 backdrop-blur-sm p-6 md:p-8 rounded-[2rem] md:rounded-[3rem] shadow-2xl border-b-8 border-slate-200 flex flex-col gap-6">
-          <header className="text-center space-y-1">
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-blue-600 tracking-tight drop-shadow-sm">数正方体</h1>
-            <p className="text-blue-500/70 font-bold text-xs md:text-sm tracking-widest uppercase">3D Logic Challenge</p>
-          </header>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
+      {/* 控制面板 */}
+      <div className="flex-1 md:w-[350px] lg:w-[420px] xl:w-[480px] flex flex-col gap-3 overflow-y-auto no-scrollbar pb-2">
+        <div className="bg-white/90 backdrop-blur-sm p-5 md:p-6 rounded-[2rem] md:rounded-[3rem] shadow-2xl border-b-8 border-slate-200 flex flex-col gap-4">
+          
+          <div className="space-y-4">
             <div className="space-y-2">
-              <label className="block text-center text-slate-500 font-bold text-sm md:text-base">这里一共有几个小方块？</label>
-              <input type="number" inputMode="numeric" value={userGuess} onChange={(e) => setUserGuess(e.target.value)} placeholder="?"
-                className="w-full px-6 py-4 md:py-6 bg-slate-50 border-4 border-slate-100 rounded-3xl focus:border-blue-400 focus:outline-none transition-all text-4xl md:text-5xl font-black text-center text-slate-800 placeholder:text-slate-200" />
+              <label className="block text-center text-slate-500 font-black text-sm md:text-base tracking-wide">
+                一共有几个小正方体？
+              </label>
+              <div className="w-full py-4 bg-slate-50 border-4 border-slate-100 rounded-2xl text-5xl md:text-6xl font-black text-center text-slate-800 h-24 flex items-center justify-center">
+                {userGuess || <span className="text-slate-200">?</span>}
+              </div>
             </div>
-            <button type="submit" disabled={!userGuess}
-              className="w-full py-4 md:py-5 bg-green-500 hover:bg-green-600 disabled:bg-slate-300 text-white rounded-3xl transition-all shadow-[0_6px_0_rgb(21,128,61)] active:shadow-none active:translate-y-1 font-black text-xl md:text-2xl flex items-center justify-center gap-3">
-              检查答案 <Send className="w-5 h-5 md:w-6 md:h-6" />
-            </button>
-          </form>
 
-          <div className="grid grid-cols-2 gap-3 md:gap-4">
-            <button onClick={toggleHint} className={`flex items-center justify-center gap-2 py-3 md:py-4 rounded-2xl transition-all font-black text-sm md:text-lg border-b-4 active:border-b-0 active:translate-y-1 ${
-              showHint ? 'bg-yellow-400 text-white border-yellow-600' : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'
-            }`}>
-              <Lightbulb className="w-4 h-4 md:w-6 md:h-6" /> 提示
-            </button>
-            <button onClick={startNewGame} className="flex items-center justify-center gap-2 py-3 md:py-4 bg-slate-100 text-slate-600 rounded-2xl hover:bg-slate-200 border-b-4 border-slate-300 active:border-b-0 active:translate-y-1 transition-all font-black text-sm md:text-lg">
-              <RotateCcw className="w-4 h-4 md:w-6 md:h-6" /> 换一题
+            {/* 自定义键盘 */}
+            <div className="grid grid-cols-3 gap-2 md:gap-3">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((num) => (
+                <button
+                  key={num}
+                  type="button"
+                  onClick={() => handleKeyPress(num.toString())}
+                  className={`py-4 md:py-5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-2xl text-2xl md:text-3xl font-black text-slate-700 transition-all border-b-4 border-slate-300 active:border-b-0 active:translate-y-1 ${num === 0 ? 'col-span-2' : ''}`}
+                >
+                  {num}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={handleBackspace}
+                className="py-4 md:py-5 bg-red-50 hover:bg-red-100 active:bg-red-200 text-red-500 rounded-2xl flex items-center justify-center transition-all border-b-4 border-red-200 active:border-b-0 active:translate-y-1"
+              >
+                <Delete className="w-8 h-8" />
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleSubmit()}
+              disabled={!userGuess}
+              className="w-full py-4 md:py-5 bg-green-500 hover:bg-green-600 disabled:bg-slate-300 text-white rounded-3xl transition-all shadow-[0_6px_0_rgb(21,128,61)] active:shadow-none active:translate-y-1 font-black text-xl md:text-2xl flex items-center justify-center gap-3"
+            >
+              检查答案 <Send className="w-5 h-5 md:w-6 md:h-6" />
             </button>
           </div>
 
-          <div className={`p-4 md:p-6 rounded-3xl min-h-[100px] flex flex-col items-center justify-center text-center transition-all duration-300 border-4 ${
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={toggleHint} className={`flex items-center justify-center gap-2 py-3 rounded-2xl transition-all font-black text-sm md:text-base border-b-4 active:border-b-0 active:translate-y-1 ${
+              showHint ? 'bg-yellow-400 text-white border-yellow-600' : 'bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100'
+            }`}>
+              <Lightbulb className="w-4 h-4 md:w-5 md:h-5" /> 提示
+            </button>
+            <button onClick={startNewGame} className="flex items-center justify-center gap-2 py-3 bg-slate-100 text-slate-600 rounded-2xl hover:bg-slate-200 border-b-4 border-slate-300 active:border-b-0 active:translate-y-1 transition-all font-black text-sm md:text-base">
+              <RotateCcw className="w-4 h-4 md:w-5 md:h-5" /> 换一题
+            </button>
+          </div>
+
+          <div className={`p-4 rounded-3xl min-h-[80px] flex flex-col items-center justify-center text-center transition-all duration-300 border-4 ${
             isCorrect === true ? 'bg-green-50 border-green-200' : isCorrect === false ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-100'
           }`}>
              <div className="flex flex-col items-center gap-2">
-                <p className={`text-base md:text-lg lg:text-xl font-black ${isCorrect === true ? 'text-green-700' : isCorrect === false ? 'text-red-700' : 'text-blue-700'}`}>
+                <p className={`text-sm md:text-base font-black ${isCorrect === true ? 'text-green-700' : isCorrect === false ? 'text-red-700' : 'text-blue-700'}`}>
                   {feedback}
                 </p>
                 {isCorrect === true && (
-                  <button onClick={startNewGame} className="mt-2 px-6 py-2 bg-green-600 text-white rounded-full flex items-center gap-2 hover:bg-green-700 transition-all font-bold text-sm shadow-md active:scale-95">
-                    进入下一关 <ChevronRight className="w-4 h-4" />
+                  <button onClick={startNewGame} className="mt-1 px-5 py-1.5 bg-green-600 text-white rounded-full flex items-center gap-2 hover:bg-green-700 transition-all font-bold text-xs shadow-md active:scale-95">
+                    下一关 <ChevronRight className="w-4 h-4" />
                   </button>
                 )}
              </div>
           </div>
         </div>
 
-        <div className="bg-indigo-600/95 p-5 md:p-6 rounded-[2rem] text-white shadow-xl flex items-start gap-4">
-          <div className="p-2 bg-indigo-400/30 rounded-xl"><Sparkles className="w-6 h-6 text-yellow-300" /></div>
+        <div className="bg-indigo-600/95 p-4 md:p-5 rounded-[2rem] text-white shadow-xl flex items-start gap-4">
+          <div className="p-2 bg-indigo-400/30 rounded-xl shrink-0"><Sparkles className="w-5 h-5 text-yellow-300" /></div>
           <div className="space-y-1">
-            <h2 className="font-black text-lg">玩法小贴士</h2>
-            <p className="text-xs md:text-sm font-medium opacity-80 leading-relaxed">
-              左右拖动旋转观察，别忘了数一数那些被压在下面的方块哦！如果数不清，可以试试“拆开数数”。
+            <h2 className="font-black text-base">玩法小贴士</h2>
+            <p className="text-[10px] md:text-xs font-medium opacity-80 leading-relaxed">
+              拖动方块旋转观察，注意底层！数不清可以“拆开数数”。
             </p>
           </div>
         </div>
