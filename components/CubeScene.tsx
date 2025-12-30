@@ -14,14 +14,12 @@ const SingleCube: React.FC<{ position: [number, number, number]; color: string }
     <mesh position={position}>
       <boxGeometry args={[0.92, 0.92, 0.92]} />
       <meshStandardMaterial color={color} roughness={0.2} metalness={0.1} />
-      {/* 加粗描边 lineWidth 设为 3，颜色设为深色增强轮廓感 */}
       <Edges color="#1e293b" threshold={15} lineWidth={4} />
     </mesh>
   );
 };
 
 const CubeGroup: React.FC<{ positions: Position[]; isExploded: boolean }> = ({ positions, isExploded }) => {
-  // 更鲜艳的颜色：亮蓝、草绿、鲜红/橙
   const layerColors = ["#3b82f6", "#22c55e", "#ef4444"];
   const gap = isExploded ? 1.0 : 0;
 
@@ -45,11 +43,11 @@ const CubeScene: React.FC<CubeSceneProps> = ({ positions, isExploded = false }) 
   return (
     <div className="w-full h-full bg-blue-50 rounded-[2.5rem] overflow-hidden shadow-inner border-8 border-white">
       <Canvas shadows>
-        <PerspectiveCamera makeDefault position={[6, 6, 6]} fov={40} />
+        {/* 将位置从 [8, 8, 8] 调整到 [11, 11, 11] 以获得更远的视角 */}
+        <PerspectiveCamera makeDefault position={[11, 11, 11]} fov={40} />
         <OrbitControls 
           enablePan={false} 
-          minDistance={4} 
-          maxDistance={18} 
+          enableZoom={false} 
           autoRotate={false}
           makeDefault
         />
@@ -62,13 +60,12 @@ const CubeScene: React.FC<CubeSceneProps> = ({ positions, isExploded = false }) 
           <CubeGroup positions={positions} isExploded={isExploded} />
         </Center>
         
-        {/* 地面网格淡化，更符合卡通风格 */}
         <gridHelper args={[20, 20, 0xbfdbfe, 0xdbeafe]} position={[0, -0.01, 0]} />
         <color attach="background" args={['#f0f9ff']} />
       </Canvas>
       
       <div className="absolute bottom-6 left-6 text-slate-500 text-sm font-bold pointer-events-none bg-white/50 px-4 py-2 rounded-full backdrop-blur-sm">
-        👈 拖动旋转观察 • 捏合缩放大小
+        👈 拖动旋转观察
       </div>
     </div>
   );

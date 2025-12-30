@@ -18,7 +18,6 @@ const playSound = (type: 'correct' | 'wrong' | 'click', isMuted: boolean) => {
   const now = ctx.currentTime;
 
   if (type === 'correct') {
-    // 愉悦的上升音阶
     osc.type = 'sine';
     osc.frequency.setValueAtTime(440, now);
     osc.frequency.exponentialRampToValueAtTime(880, now + 0.5);
@@ -27,7 +26,6 @@ const playSound = (type: 'correct' | 'wrong' | 'click', isMuted: boolean) => {
     osc.start(now);
     osc.stop(now + 0.5);
   } else if (type === 'wrong') {
-    // 提示音
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(220, now);
     osc.frequency.linearRampToValueAtTime(110, now + 0.2);
@@ -36,7 +34,6 @@ const playSound = (type: 'correct' | 'wrong' | 'click', isMuted: boolean) => {
     osc.start(now);
     osc.stop(now + 0.2);
   } else {
-    // 普通点击
     osc.type = 'sine';
     osc.frequency.setValueAtTime(600, now);
     gain.gain.setValueAtTime(0.05, now);
@@ -135,7 +132,6 @@ const App: React.FC = () => {
       setFeedback('太棒了！你数得非常准！✨');
       playSound('correct', isMuted);
       setTriggerEffect(true);
-      // 特效播放一会后关闭重置
       setTimeout(() => setTriggerEffect(false), 2000);
     } else {
       setFeedback('哎呀，差一点点，再数一遍试试？');
@@ -157,11 +153,9 @@ const App: React.FC = () => {
     <div className="flex flex-col md:flex-row h-screen bg-sky-100 overflow-hidden p-4 md:p-6 gap-6 relative">
       <StarCelebration active={triggerEffect} />
 
-      {/* 3D 视图区域 */}
       <div className="flex-1 relative">
         <CubeScene positions={puzzle.positions} isExploded={isExploded} />
         
-        {/* 分数显示 */}
         <div className="absolute top-6 left-6 bg-white shadow-xl px-6 py-3 rounded-[2rem] flex items-center gap-3 border-4 border-yellow-400">
           <Trophy className="w-8 h-8 text-yellow-500 fill-yellow-200" />
           <div className="flex flex-col">
@@ -170,7 +164,6 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* 音效开关 */}
         <button 
           onClick={() => setIsMuted(!isMuted)}
           className="absolute top-6 right-6 bg-white/80 backdrop-blur shadow-lg p-3 rounded-full border-4 border-white hover:bg-white transition-all text-slate-600"
@@ -178,7 +171,6 @@ const App: React.FC = () => {
           {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
         </button>
 
-        {/* 悬浮操作按钮 */}
         <div className="absolute bottom-6 right-6 flex flex-col gap-3">
            <button
             onClick={() => {
@@ -197,7 +189,6 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* 控制区域 */}
       <div className="w-full md:w-[26rem] flex flex-col gap-6">
         <div className="bg-white p-8 rounded-[3rem] shadow-2xl border-b-8 border-slate-200 flex flex-col gap-8 flex-1 overflow-y-auto">
           <header className="text-center">
